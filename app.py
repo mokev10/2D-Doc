@@ -47,7 +47,7 @@ textarea:focus {
     color: white;
 }
 
-/* bouton style */
+/* bouton */
 .stButton > button {
     background: linear-gradient(90deg, #3b82f6, #6366f1);
     color: white;
@@ -63,20 +63,20 @@ textarea:focus {
     transform: scale(1.05);
 }
 
-/* ---------------- LAYOUT GLOBAL CENTRÉ ---------------- */
-.center-wrapper {
+/* ---------------- CENTRAGE IMAGE ---------------- */
+.center-img {
     display: flex;
-    flex-direction: column;
-    align-items: center;
     justify-content: center;
+    align-items: center;
+    flex-direction: column;
     margin-top: 20px;
-    gap: 25px;
 }
 
-/* image centrée */
-.center-wrapper img {
+/* force image centrée */
+.center-img img {
     display: block;
-    margin: auto;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 </style>
@@ -98,9 +98,13 @@ dpi = st.slider(
 
 use_escape = st.checkbox("Activer escape sequences (\\n = retour ligne)")
 
-# ---------------- ACTION ----------------
+# ---------------- BOUTON CENTRÉ ----------------
+col1, col2, col3 = st.columns([1, 1, 1])
 
-generate = st.button("Générer")
+with col2:
+    generate = st.button("Générer")
+
+# ---------------- RESULT ----------------
 
 if generate:
     if data.strip():
@@ -110,8 +114,8 @@ if generate:
 
         img_buffer = generate_datamatrix(data, dpi=dpi)
 
-        # 🔥 BLOCS ALIGNÉS (BOUTON + IMAGE EN COLONNE CENTRÉE)
-        st.markdown('<div class="center-wrapper">', unsafe_allow_html=True)
+        # 🔥 WRAPPER CENTRÉ COMPLET
+        st.markdown('<div class="center-img">', unsafe_allow_html=True)
 
         st.image(img_buffer, caption="DataMatrix généré")
 
