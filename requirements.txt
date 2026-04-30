@@ -1,3 +1,4 @@
 streamlit
 treepoem
 pillow
+requests
