@@ -1,7 +1,7 @@
 import streamlit as st
 from scripts.generate_datamatrix import generate_datamatrix
 
-st.title("📦 Générateur DataMatrix")
+st.title("Générateur DataMatrix")
 # --- Page config (corrigé selon ta demande) ---
 st.set_page_config(
     page_title="Générateur 2D-Codes Data Matrix",
