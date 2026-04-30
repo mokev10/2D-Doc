@@ -1,14 +1,19 @@
-import treepoem
+import requests
 import io
-
+import streamlit as st
 def generate_datamatrix(data: str):
-    image = treepoem.generate_barcode(
-        barcode_type='datamatrix',
-        data=data
-    )
+    url = "https://barcode.tec-it.com/barcode.ashx"
 
-    buffer = io.BytesIO()
-    image.convert("RGB").save(buffer, format="PNG")
-    buffer.seek(0)
+    params = {
+        "data": data,
+        "code": "DataMatrix",
+        "multiplebarcodes": "false",
+        "translate-esc": "true"
+    }
 
-    return buffer
+    response = requests.get(url, params=params)
+
+    if response.status_code != 200:
+        raise Exception("Erreur génération DataMatrix")
+
+    return io.BytesIO(response.content)
