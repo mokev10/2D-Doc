@@ -23,33 +23,83 @@ except Exception:
 
 # --- Page config (corrigé selon ta demande) ---
 st.set_page_config(
-    page_title="Générateur 2D-Doc CIN TD1",
+    page_title="Générateur 2D-Codes Data Matrix",
     page_icon="https://img.icons8.com/external-duo-tone-yogi-aprelliyanto/24/external-search-file-document-duo-tone-yogi-aprelliyanto.png",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# --- CSS pour rendu visuel similaire ---
+# --- CSS pour rendu visuel similaire à l'exemple ---
 st.markdown(
     """
     <style>
-    .stApp { background-color: #eaf6fb; }
-    .card { background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(250,250,255,0.96)); border-radius:12px; padding:16px; box-shadow:0 6px 18px rgba(20,40,60,0.06); }
-    .vertical-divider { width:28px; display:flex; align-items:center; justify-content:center; }
-    .vertical-divider .bar { width:2px; height:320px; background:linear-gradient(180deg,#0b6fa4,#6fc3e8); border-radius:2px; position:relative; }
-    .vertical-divider .dot { position:absolute; left:-6px; width:12px; height:12px; border-radius:50%; background:#e6fbff; border:2px solid rgba(11,111,164,0.12); }
-    .qr-card { background: #fff; padding:12px; border-radius:10px; display:inline-block; border:1px solid rgba(0,0,0,0.03); }
-    .small-muted { color:#4b6b7a; font-size:13px; }
-    .stButton>button { background-color:#0b6fa4; color:white; border-radius:8px; padding:8px 14px; border:none; }
+    .stApp {
+        background-color: #eaf6fb;
+        background-image:
+            radial-gradient(circle at 10% 20%, rgba(255,255,255,0.6) 0px, rgba(255,255,255,0.0) 2px),
+            radial-gradient(circle at 80% 80%, rgba(255,255,255,0.6) 0px, rgba(255,255,255,0.0) 2px),
+            repeating-linear-gradient(45deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 1px, transparent 1px, transparent 20px);
+        background-size: 120px 120px, 120px 120px, 100% 100%;
+    }
+    .card {
+        background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(250,250,255,0.95));
+        border-radius: 12px;
+        padding: 18px;
+        box-shadow: 0 6px 18px rgba(20,40,60,0.08);
+        border: 1px solid rgba(0,0,0,0.04);
+    }
+    .vertical-divider {
+        width: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .vertical-divider .bar {
+        width: 2px;
+        height: 320px;
+        background: linear-gradient(180deg, #0b6fa4, #6fc3e8);
+        border-radius: 2px;
+        position: relative;
+        box-shadow: 0 2px 6px rgba(11,111,164,0.12);
+    }
+    .vertical-divider .dot {
+        position: absolute;
+        left: -6px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #e6fbff;
+        border: 2px solid rgba(11,111,164,0.12);
+    }
+    .vertical-divider .dot:nth-child(1) { top: 18px; transform: scale(0.9); }
+    .vertical-divider .dot:nth-child(2) { top: 90px; transform: scale(0.7); }
+    .vertical-divider .dot:nth-child(3) { top: 170px; transform: scale(1.0); }
+    .vertical-divider .dot:nth-child(4) { top: 250px; transform: scale(0.8); }
+    .qr-card {
+        background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(245,255,255,0.98));
+        padding: 14px;
+        border-radius: 10px;
+        display: inline-block;
+        border: 1px solid rgba(0,0,0,0.03);
+    }
+    .small-muted { color: #4b6b7a; font-size: 13px; }
+    .stButton>button { background-color: #0b6fa4; color: white; border-radius: 8px; padding: 8px 14px; border: none; }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-st.markdown("<div style='display:flex;align-items:center;gap:12px'><h2 style='margin:0'>Générateur 2D‑Doc CIN TD1</h2><div class='small-muted'>DataMatrix par défaut (factice)</div></div>", unsafe_allow_html=True)
+# --- Header ---
+st.markdown(
+    "<div style='display:flex;align-items:center;gap:12px'>"
+    "<h2 style='margin:0'>Générateur 2D‑Codes Data Matrix</h2>"
+    "<div class='small-muted'>Aperçu et export (factice)</div>"
+    "</div>",
+    unsafe_allow_html=True,
+)
 st.markdown("---")
 
-# --- Layout ---
+# --- Layout: left form + decorative divider + right preview ---
 left_col, divider_col, right_col = st.columns([2.6, 0.12, 1.6])
 
 with left_col:
@@ -66,15 +116,19 @@ with left_col:
     doc_type = st.text_input("Code document (placeholder)", value="TD1CIN")
     issuer = st.text_input("Émetteur (placeholder)", value="FRANCE")
 
-    # Symbologie par défaut : DataMatrix. On propose QR uniquement si DataMatrix indisponible.
+    # Symbologie par défaut : DataMatrix
     if DATAMATRIX_AVAILABLE:
-        symbologie = st.selectbox("Symbologie", options=["DataMatrix", "QR Code"])
+        symbologie = st.selectbox("Symbologie", options=["DataMatrix (par défaut)", "QR Code"])
     else:
-        symbologie = st.selectbox("Symbologie", options=(["QR Code"] if SEGNO_AVAILABLE else ["DataMatrix (non disponible)"]))
-        if symbologie.startswith("DataMatrix") and not DATAMATRIX_AVAILABLE:
-            st.warning("pylibdmtx (DataMatrix) non installé dans cet environnement. Le rendu DataMatrix ne fonctionnera pas ici.")
+        # DataMatrix non disponible : avertir et proposer QR si possible
+        if SEGNO_AVAILABLE:
+            st.warning("pylibdmtx (DataMatrix) non installé ici — le rendu DataMatrix ne fonctionnera pas. QR Code proposé en fallback.")
+            symbologie = st.selectbox("Symbologie", options=["QR Code"])
+        else:
+            st.warning("pylibdmtx (DataMatrix) et segno (QR) sont absents. Installez les dépendances ou utilisez Docker.")
+            symbologie = st.selectbox("Symbologie", options=["DataMatrix (non disponible)"])
 
-    st.markdown("**Remarque** : ceci est un 2D‑Doc factice pour tests. Il ne sera pas reconnu comme authentique par l’ANTS.", unsafe_allow_html=True)
+    st.markdown("**Remarque** : ceci est un rendu factice pour tests. Il ne sera pas reconnu comme authentique par l’ANTS.", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 with divider_col:
@@ -95,9 +149,9 @@ with divider_col:
 
 with right_col:
     st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.subheader("Aperçu 2D‑Doc (chaîne encodée)")
+    st.subheader("Aperçu 2D‑Codes (chaîne encodée)")
 
-    # Construire message (séparateurs factices)
+    # Construire la zone message (séparateurs factices)
     def build_message(doc_type: str, issuer: str, fields: dict) -> str:
         parts = [f"TYPE:{doc_type}", f"ISS:{issuer}"]
         for k, v in fields.items():
@@ -126,12 +180,12 @@ with right_col:
     signature_b64 = base64.b64encode(signature).decode("ascii")
 
     header = "DC03FR01"  # en-tête factice
-    two_d_doc_string = header + message + "\x1f" + "SIG:" + signature_b64
+    two_d_string = header + message + "\x1f" + "SIG:" + signature_b64
 
-    preview = two_d_doc_string if len(two_d_doc_string) <= 600 else two_d_doc_string[:600] + "..."
+    preview = two_d_string if len(two_d_string) <= 600 else two_d_string[:600] + "..."
     st.code(preview, language="text")
 
-    # Explication visuelle
+    # Explication visuelle (rappel)
     st.markdown(
         """
         **Comment distinguer visuellement les deux symbologies :**
@@ -169,20 +223,22 @@ with right_col:
         buf.seek(0)
         return buf.read()
 
-    if st.button("Générer 2D‑Doc"):
+    if st.button("Générer 2D‑Code"):
         try:
-            if symbologie == "DataMatrix":
+            # Par défaut on tente DataMatrix si disponible
+            if symbologie and "DataMatrix" in symbologie:
                 try:
-                    png_bytes = make_datamatrix_png_bytes(two_d_doc_string)
+                    png_bytes = make_datamatrix_png_bytes(two_d_string)
                 except Exception as e:
+                    # Si échec DataMatrix, fallback QR si possible
                     st.error(f"Impossible de générer DataMatrix ici : {e}")
                     if SEGNO_AVAILABLE:
                         st.info("Génération QR effectuée en fallback.")
-                        png_bytes = make_qr_png_bytes(two_d_doc_string)
+                        png_bytes = make_qr_png_bytes(two_d_string)
                     else:
                         raise
             else:
-                png_bytes = make_qr_png_bytes(two_d_doc_string)
+                png_bytes = make_qr_png_bytes(two_d_string)
 
             # Affichage et téléchargement
             st.markdown("<div class='qr-card' style='text-align:center'>", unsafe_allow_html=True)
@@ -194,10 +250,11 @@ with right_col:
             st.markdown("**Clé publique de test (PEM)**")
             st.code(public_key_pem.decode("utf-8"), language="text")
 
+            filename = "2ddoc_datamatrix.png" if ("DataMatrix" in symbologie) else "2ddoc_qr.png"
             st.download_button(
                 label="Télécharger PNG",
                 data=png_bytes,
-                file_name="2ddoc_datamatrix.png" if symbologie == "DataMatrix" else "2ddoc_qr.png",
+                file_name=filename,
                 mime="image/png"
             )
         except Exception as e:
