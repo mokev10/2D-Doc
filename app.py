@@ -182,6 +182,22 @@ with right_col:
     preview = two_d_doc_string if len(two_d_doc_string) <= 600 else two_d_doc_string[:600] + "..."
     st.code(preview, language="text")
 
+    # Insert the requested explanatory rendering text exactly as provided
+    st.markdown(
+        """
+        **Comment distinguer visuellement les deux symbologies :**
+
+        - **Présence de trois grands carrés dans les coins supérieurs gauche/droit et inférieur gauche → QR Code.** Ces marqueurs (finder patterns) sont la signature visuelle du QR.
+
+        - **Absence de ces marqueurs et motif plus homogène, parfois avec une bordure solide en forme de L → DataMatrix (ou autre symbologie 2D sans finder patterns).**
+
+        - **Zone blanche autour du code (quiet zone) est typique des QR ; DataMatrix peut paraître plus « collé » au fond.**
+
+        - **Si le code montre petits modules très serrés et pas de gros marqueurs, il s’agit très probablement d’un DataMatrix.**
+        """,
+        unsafe_allow_html=True,
+    )
+
     # QR/DataMatrix generation functions
     def make_qr_png_bytes(data: str, scale: int = 6, border: int = 4) -> bytes:
         qr = segno.make(data, error='h')
