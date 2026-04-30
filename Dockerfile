@@ -1,14 +1,7 @@
-# Dockerfile
 FROM python:3.11-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libssl-dev \
-    libffi-dev \
-    python3-dev \
-    libjpeg-dev \
-    zlib1g-dev \
-    libdmtx-dev \
+    build-essential libssl-dev libffi-dev python3-dev libjpeg-dev zlib1g-dev libdmtx-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
