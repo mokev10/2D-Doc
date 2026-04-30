@@ -7,19 +7,17 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import serialization
 
-# Essayer d'importer pylibdmtx (DataMatrix). Si absent, on proposera un fallback QR.
+# --- IMPORTANT: This app enforces DataMatrix only (pas de fallback QR) ---
+# Si pylibdmtx n'est pas installé, l'application affichera un message clair
+# et la génération sera désactivée. Pour exécuter l'app avec DataMatrix,
+# déployez via Docker (Dockerfile fourni) ou installez libdmtx-dev + pylibdmtx.
+
+# Tentative d'import DataMatrix (obligatoire)
 try:
     from pylibdmtx import encode as dmtx_encode
     DATAMATRIX_AVAILABLE = True
 except Exception:
     DATAMATRIX_AVAILABLE = False
-
-# Segno pour QR fallback si nécessaire
-try:
-    import segno
-    SEGNO_AVAILABLE = True
-except Exception:
-    SEGNO_AVAILABLE = False
 
 # --- Page config (corrigé selon ta demande) ---
 st.set_page_config(
@@ -71,10 +69,6 @@ st.markdown(
         background: #e6fbff;
         border: 2px solid rgba(11,111,164,0.12);
     }
-    .vertical-divider .dot:nth-child(1) { top: 18px; transform: scale(0.9); }
-    .vertical-divider .dot:nth-child(2) { top: 90px; transform: scale(0.7); }
-    .vertical-divider .dot:nth-child(3) { top: 170px; transform: scale(1.0); }
-    .vertical-divider .dot:nth-child(4) { top: 250px; transform: scale(0.8); }
     .qr-card {
         background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(245,255,255,0.98));
         padding: 14px;
@@ -84,6 +78,13 @@ st.markdown(
     }
     .small-muted { color: #4b6b7a; font-size: 13px; }
     .stButton>button { background-color: #0b6fa4; color: white; border-radius: 8px; padding: 8px 14px; border: none; }
+    .warning-box {
+        background: #fff4e5;
+        border-left: 4px solid #ffb020;
+        padding: 10px 14px;
+        border-radius: 6px;
+        color: #6b4b00;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -93,7 +94,7 @@ st.markdown(
 st.markdown(
     "<div style='display:flex;align-items:center;gap:12px'>"
     "<h2 style='margin:0'>Générateur 2D‑Codes Data Matrix</h2>"
-    "<div class='small-muted'>Aperçu et export (factice)</div>"
+    "<div class='small-muted'>Aperçu et export (factice) — DataMatrix obligatoire</div>"
     "</div>",
     unsafe_allow_html=True,
 )
@@ -116,17 +117,8 @@ with left_col:
     doc_type = st.text_input("Code document (placeholder)", value="TD1CIN")
     issuer = st.text_input("Émetteur (placeholder)", value="FRANCE")
 
-    # Symbologie par défaut : DataMatrix
-    if DATAMATRIX_AVAILABLE:
-        symbologie = st.selectbox("Symbologie", options=["DataMatrix (par défaut)", "QR Code"])
-    else:
-        # DataMatrix non disponible : avertir et proposer QR si possible
-        if SEGNO_AVAILABLE:
-            st.warning("pylibdmtx (DataMatrix) non installé ici — le rendu DataMatrix ne fonctionnera pas. QR Code proposé en fallback.")
-            symbologie = st.selectbox("Symbologie", options=["QR Code"])
-        else:
-            st.warning("pylibdmtx (DataMatrix) et segno (QR) sont absents. Installez les dépendances ou utilisez Docker.")
-            symbologie = st.selectbox("Symbologie", options=["DataMatrix (non disponible)"])
+    # Symbologie forcée : DataMatrix (pas d'option pour QR)
+    st.markdown("**Symbologie : DataMatrix (obligatoire)**", unsafe_allow_html=True)
 
     st.markdown("**Remarque** : ceci est un rendu factice pour tests. Il ne sera pas reconnu comme authentique par l’ANTS.", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
@@ -185,80 +177,67 @@ with right_col:
     preview = two_d_string if len(two_d_string) <= 600 else two_d_string[:600] + "..."
     st.code(preview, language="text")
 
-    # Explication visuelle (rappel)
-    st.markdown(
-        """
-        **Comment distinguer visuellement les deux symbologies :**
+    # Si pylibdmtx absent : afficher message d'erreur explicite et désactiver génération
+    if not DATAMATRIX_AVAILABLE:
+        st.markdown(
+            """
+            <div class="warning-box">
+            <strong>Erreur :</strong> <em>pylibdmtx (DataMatrix) n'est pas installé dans cet environnement.</em><br>
+            Le rendu DataMatrix ne fonctionnera pas tant que la dépendance système <code>libdmtx</code> et le paquet Python <code>pylibdmtx</code> ne sont pas présents.<br><br>
+            <strong>Solutions recommandées :</strong>
+            <ul>
+              <li>Déployer via <code>Docker</code> en utilisant le <code>Dockerfile</code> fourni (installe <code>libdmtx-dev</code> puis <code>pylibdmtx</code>).</li>
+              <li>Ou déployer sur une plateforme qui accepte un <code>Dockerfile</code> (Render, Railway avec Docker, VPS, etc.).</li>
+            </ul>
+            L'application a désactivé la génération tant que DataMatrix n'est pas disponible.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        # Bouton désactivé visuellement : on affiche un bouton inactif (non cliquable)
+        st.button("Générer DataMatrix (indisponible)", disabled=True)
+        # Afficher instructions courtes pour Docker (copier-coller)
+        st.markdown("**Commande Docker recommandée (local / CI) :**")
+        st.code(
+            "docker build -t 2ddoc-app:latest . && docker run --rm -p 8501:8501 2ddoc-app:latest",
+            language="bash",
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
+    else:
+        # Génération DataMatrix (pylibdmtx disponible)
+        def make_datamatrix_png_bytes(data: str) -> bytes:
+            # pylibdmtx.encode retourne généralement bytes (PNG)
+            encoded = dmtx_encode(data.encode('utf-8'))
+            if isinstance(encoded, bytes):
+                return encoded
+            if hasattr(encoded, "save"):
+                buf = io.BytesIO()
+                encoded.save(buf, format="PNG")
+                return buf.getvalue()
+            raise RuntimeError("Format de sortie DataMatrix inattendu.")
 
-        - **Présence de trois grands carrés dans les coins supérieurs gauche/droit et inférieur gauche → QR Code.** Ces marqueurs (finder patterns) sont la signature visuelle du QR.
+        if st.button("Générer DataMatrix"):
+            try:
+                png_bytes = make_datamatrix_png_bytes(two_d_string)
 
-        - **Absence de ces marqueurs et motif plus homogène, parfois avec une bordure solide en forme de L → DataMatrix (ou autre symbologie 2D sans finder patterns).**
+                # Affichage et téléchargement
+                st.markdown("<div class='qr-card' style='text-align:center'>", unsafe_allow_html=True)
+                st.image(Image.open(io.BytesIO(png_bytes)), use_column_width=False)
+                st.markdown("</div>", unsafe_allow_html=True)
 
-        - **Zone blanche autour du code (quiet zone) est typique des QR ; DataMatrix peut paraître plus « collé » au fond.**
+                st.markdown("**Signature (base64)**")
+                st.code(signature_b64, language="text")
+                st.markdown("**Clé publique de test (PEM)**")
+                st.code(public_key_pem.decode("utf-8"), language="text")
 
-        - **Si le code montre petits modules très serrés et pas de gros marqueurs, il s’agit très probablement d’un DataMatrix.**
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # --- Génération DataMatrix / QR ---
-    def make_datamatrix_png_bytes(data: str) -> bytes:
-        if not DATAMATRIX_AVAILABLE:
-            raise RuntimeError("pylibdmtx non disponible dans cet environnement.")
-        encoded = dmtx_encode(data.encode('utf-8'))
-        if isinstance(encoded, bytes):
-            return encoded
-        if hasattr(encoded, "save"):
-            buf = io.BytesIO()
-            encoded.save(buf, format="PNG")
-            return buf.getvalue()
-        raise RuntimeError("Format de sortie DataMatrix inattendu.")
-
-    def make_qr_png_bytes(data: str, scale: int = 6, border: int = 4) -> bytes:
-        if not SEGNO_AVAILABLE:
-            raise RuntimeError("segno non disponible pour QR fallback.")
-        qr = segno.make(data, error='h')
-        buf = io.BytesIO()
-        qr.save(buf, kind='png', scale=scale, border=border)
-        buf.seek(0)
-        return buf.read()
-
-    if st.button("Générer 2D‑Code"):
-        try:
-            # Par défaut on tente DataMatrix si disponible
-            if symbologie and "DataMatrix" in symbologie:
-                try:
-                    png_bytes = make_datamatrix_png_bytes(two_d_string)
-                except Exception as e:
-                    # Si échec DataMatrix, fallback QR si possible
-                    st.error(f"Impossible de générer DataMatrix ici : {e}")
-                    if SEGNO_AVAILABLE:
-                        st.info("Génération QR effectuée en fallback.")
-                        png_bytes = make_qr_png_bytes(two_d_string)
-                    else:
-                        raise
-            else:
-                png_bytes = make_qr_png_bytes(two_d_string)
-
-            # Affichage et téléchargement
-            st.markdown("<div class='qr-card' style='text-align:center'>", unsafe_allow_html=True)
-            st.image(Image.open(io.BytesIO(png_bytes)), use_column_width=False)
-            st.markdown("</div>", unsafe_allow_html=True)
-
-            st.markdown("**Signature (base64)**")
-            st.code(signature_b64, language="text")
-            st.markdown("**Clé publique de test (PEM)**")
-            st.code(public_key_pem.decode("utf-8"), language="text")
-
-            filename = "2ddoc_datamatrix.png" if ("DataMatrix" in symbologie) else "2ddoc_qr.png"
-            st.download_button(
-                label="Télécharger PNG",
-                data=png_bytes,
-                file_name=filename,
-                mime="image/png"
-            )
-        except Exception as e:
-            st.error(f"Erreur lors de la génération : {e}")
+                st.download_button(
+                    label="Télécharger PNG",
+                    data=png_bytes,
+                    file_name="2ddoc_datamatrix.png",
+                    mime="image/png"
+                )
+            except Exception as e:
+                st.error(f"Erreur lors de la génération DataMatrix : {e}")
 
     st.markdown("</div>", unsafe_allow_html=True)
 
