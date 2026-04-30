@@ -47,15 +47,6 @@ textarea:focus {
     color: white;
 }
 
-/* ---------------- CENTRAGE GLOBAL ---------------- */
-.center-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    margin-top: 20px;
-}
-
 /* bouton */
 .stButton > button {
     background: linear-gradient(90deg, #3b82f6, #6366f1);
@@ -72,8 +63,17 @@ textarea:focus {
     transform: scale(1.05);
 }
 
-/* image centrée */
-img {
+/* ---------------- CENTRAGE IMAGE ---------------- */
+.center-img {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    margin-top: 20px;
+}
+
+/* force image centrée */
+.center-img img {
     display: block;
     margin-left: auto;
     margin-right: auto;
@@ -114,7 +114,8 @@ if generate:
 
         img_buffer = generate_datamatrix(data, dpi=dpi)
 
-        st.markdown("<div class='center-container'>", unsafe_allow_html=True)
+        # 🔥 WRAPPER CENTRÉ COMPLET
+        st.markdown('<div class="center-img">', unsafe_allow_html=True)
 
         st.image(img_buffer, caption="DataMatrix généré")
 
@@ -125,7 +126,7 @@ if generate:
             mime="image/png"
         )
 
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
     else:
         st.warning("Veuillez entrer un texte à encoder")
