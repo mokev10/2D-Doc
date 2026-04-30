@@ -4,7 +4,7 @@ from scripts.generate_datamatrix import generate_datamatrix
 # ⚠️ DOIT être la première commande Streamlit
 st.set_page_config(
     page_title="Générateur 2D-Codes Data Matrix",
-    page_icon="📦",
+    page_icon="https://img.icons8.com/external-duo-tone-yogi-aprelliyanto/24/external-search-file-document-duo-tone-yogi-aprelliyanto.png",
     layout="wide",
     initial_sidebar_state="expanded",
 )
