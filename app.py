@@ -1,20 +1,27 @@
 import streamlit as st
 from scripts.generate_datamatrix import generate_datamatrix
 
-# ✅ DOIT être en premier
 st.set_page_config(
     page_title="Générateur 2D-Codes Data Matrix",
-    page_icon="https://img.icons8.com/external-duo-tone-yogi-aprelliyanto/24/external-search-file-document-duo-tone-yogi-aprelliyanto.png",
+    page_icon="📦",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 st.title("Générateur DataMatrix")
 
-data = st.text_input("Texte à encoder")
+# 🔹 Option escape sequences
+use_escape = st.checkbox("Activer escape sequences (\\n = saut de ligne)")
+
+data = st.text_area("Texte à encoder")
 
 if st.button("Générer"):
     if data:
+
+        # 🔥 traitement escape sequences
+        if use_escape:
+            data = data.encode().decode("unicode_escape")
+
         img_buffer = generate_datamatrix(data)
 
         st.image(img_buffer)
@@ -25,5 +32,6 @@ if st.button("Générer"):
             file_name="datamatrix.png",
             mime="image/png"
         )
+
     else:
         st.warning("Entre un texte")
