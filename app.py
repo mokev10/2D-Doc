@@ -9,11 +9,11 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ---------------- CSS CUSTOM ----------------
+# ---------------- CSS ----------------
 st.markdown("""
 <style>
 
-/* Background */
+/* Fond global */
 .stApp {
     background: linear-gradient(135deg, #0f172a, #111827);
     color: white;
@@ -24,7 +24,7 @@ h1 {
     text-align: center;
     color: white;
     font-weight: 700;
-    margin-bottom: 30px;
+    margin-bottom: 25px;
 }
 
 /* Text area */
@@ -36,26 +36,27 @@ textarea {
     transition: all 0.3s ease-in-out;
 }
 
-/* focus */
 textarea:focus {
     border-color: #3b82f6 !important;
     box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
     transform: scale(1.01);
 }
 
-/* slider text */
+/* Slider */
 .stSlider > div {
     color: white;
 }
 
-/* ---------------- BOUTON CENTRÉ VRAI ---------------- */
-div.stButton {
+/* ---------------- CENTRAGE GLOBAL ---------------- */
+.center-container {
     display: flex;
     justify-content: center;
+    align-items: center;
+    flex-direction: column;
     margin-top: 20px;
 }
 
-/* bouton style */
+/* bouton */
 .stButton > button {
     background: linear-gradient(90deg, #3b82f6, #6366f1);
     color: white;
@@ -67,16 +68,15 @@ div.stButton {
     box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 
-/* hover */
 .stButton > button:hover {
-    transform: scale(1.06);
-    background: linear-gradient(90deg, #2563eb, #4f46e5);
-    box-shadow: 0 6px 25px rgba(59, 130, 246, 0.6);
+    transform: scale(1.05);
 }
 
-/* click */
-.stButton > button:active {
-    transform: scale(0.96);
+/* image centrée */
+img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 </style>
@@ -98,9 +98,13 @@ dpi = st.slider(
 
 use_escape = st.checkbox("Activer escape sequences (\\n = retour ligne)")
 
-# ---------------- ACTION ----------------
+# ---------------- BOUTON CENTRÉ ----------------
+col1, col2, col3 = st.columns([1, 1, 1])
 
-generate = st.button("Générer")
+with col2:
+    generate = st.button("Générer")
+
+# ---------------- RESULT ----------------
 
 if generate:
     if data.strip():
@@ -110,6 +114,8 @@ if generate:
 
         img_buffer = generate_datamatrix(data, dpi=dpi)
 
+        st.markdown("<div class='center-container'>", unsafe_allow_html=True)
+
         st.image(img_buffer, caption="DataMatrix généré")
 
         st.download_button(
@@ -118,6 +124,8 @@ if generate:
             file_name=f"datamatrix_{dpi}dpi.png",
             mime="image/png"
         )
+
+        st.markdown("</div>", unsafe_allow_html=True)
 
     else:
         st.warning("Veuillez entrer un texte à encoder")
