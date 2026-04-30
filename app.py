@@ -1,25 +1,37 @@
 # app.py
-import streamlit as st
+"""
+Générateur 2D‑Codes DataMatrix (affichage des images pré-générées)
+
+Ce fichier est une version complète et prête à copier-coller.
+Il suppose que les images DataMatrix sont pré-générées et stockées dans :
+    static/datamatrix/<id>.png
+
+Flux attendu :
+- Tu fournis un workflow GitHub Actions qui génère les PNG et les commit dans static/datamatrix/.
+- Streamlit Cloud déploie le site depuis le repo ; l'app sert alors les PNG statiques.
+- Cette application n'essaie pas de générer des DataMatrix à la volée : elle affiche uniquement les images présentes.
+
+Fonctionnalités :
+- Liste des images DataMatrix présentes dans static/datamatrix/
+- Aperçu, téléchargement et affichage d'une image sélectionnée
+- Affichage de la chaîne encodée (si un fichier .txt associé existe)
+- Message clair et instructions si aucune image n'est trouvée
+- UI complète avec CSS pour un rendu soigné
+"""
+
+import os
 import io
 import base64
+import streamlit as st
 from PIL import Image
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives import serialization
 
-# --- IMPORTANT: This app enforces DataMatrix only (pas de fallback QR) ---
-# Si pylibdmtx n'est pas installé, l'application affichera un message clair
-# et la génération sera désactivée. Pour exécuter l'app avec DataMatrix,
-# déployez via Docker (Dockerfile fourni) ou installez libdmtx-dev + pylibdmtx.
+# --- Configuration ---
+DM_DIR = "static/datamatrix"  # dossier où les PNG pré-générés doivent être placés
+METADATA_DIR = "static/datamatrix_meta"  # optionnel : fichiers .txt ou .json décrivant la payload
+APP_TITLE = "Générateur 2D‑Codes DataMatrix (pré‑généré)"
+APP_SUBTITLE = "Affichage des DataMatrix générés via CI (GitHub Actions)"
 
-# Tentative d'import DataMatrix (obligatoire)
-try:
-    from pylibdmtx import encode as dmtx_encode
-    DATAMATRIX_AVAILABLE = True
-except Exception:
-    DATAMATRIX_AVAILABLE = False
-
-# --- Page config (corrigé selon ta demande) ---
+# --- Page config ---
 st.set_page_config(
     page_title="Générateur 2D-Codes Data Matrix",
     page_icon="https://img.icons8.com/external-duo-tone-yogi-aprelliyanto/24/external-search-file-document-duo-tone-yogi-aprelliyanto.png",
@@ -27,7 +39,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --- CSS pour rendu visuel similaire à l'exemple ---
+# --- CSS pour rendu visuel similaire ---
 st.markdown(
     """
     <style>
@@ -40,10 +52,10 @@ st.markdown(
         background-size: 120px 120px, 120px 120px, 100% 100%;
     }
     .card {
-        background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(250,250,255,0.95));
+        background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(250,250,255,0.96));
         border-radius: 12px;
         padding: 18px;
-        box-shadow: 0 6px 18px rgba(20,40,60,0.08);
+        box-shadow: 0 6px 18px rgba(20,40,60,0.06);
         border: 1px solid rgba(0,0,0,0.04);
     }
     .vertical-divider {
@@ -59,15 +71,6 @@ st.markdown(
         border-radius: 2px;
         position: relative;
         box-shadow: 0 2px 6px rgba(11,111,164,0.12);
-    }
-    .vertical-divider .dot {
-        position: absolute;
-        left: -6px;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: #e6fbff;
-        border: 2px solid rgba(11,111,164,0.12);
     }
     .qr-card {
         background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(245,255,255,0.98));
@@ -85,6 +88,10 @@ st.markdown(
         border-radius: 6px;
         color: #6b4b00;
     }
+    .muted {
+        color: #6b7a83;
+        font-size: 13px;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -92,154 +99,172 @@ st.markdown(
 
 # --- Header ---
 st.markdown(
-    "<div style='display:flex;align-items:center;gap:12px'>"
-    "<h2 style='margin:0'>Générateur 2D‑Codes Data Matrix</h2>"
-    "<div class='small-muted'>Aperçu et export (factice) — DataMatrix obligatoire</div>"
-    "</div>",
+    f"<div style='display:flex;align-items:center;gap:12px'><h2 style='margin:0'>{APP_TITLE}</h2><div class='small-muted'>{APP_SUBTITLE}</div></div>",
     unsafe_allow_html=True,
 )
 st.markdown("---")
 
-# --- Layout: left form + decorative divider + right preview ---
-left_col, divider_col, right_col = st.columns([2.6, 0.12, 1.6])
+# --- Layout: sidebar for controls, main for preview ---
+sidebar_col, main_col = st.columns([1, 3])
 
-with left_col:
+with sidebar_col:
     st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.subheader("Données de la CIN")
-    col1, col2 = st.columns(2)
-    with col1:
-        nom = st.text_input("Nom", value="RABEARIMANANA")
-        prenom = st.text_input("Prénom", value="FANOMEZANTSOA")
-    with col2:
-        dob = st.date_input("Date de naissance")
-        num = st.text_input("Numéro CIN", value="CIN12345678")
+    st.subheader("Contrôles")
+    st.markdown("**Symbologie :** DataMatrix (images pré‑générées uniquement)", unsafe_allow_html=True)
+    st.markdown("**Dossier attendu** : `static/datamatrix/`", unsafe_allow_html=True)
+    st.markdown("---")
 
-    doc_type = st.text_input("Code document (placeholder)", value="TD1CIN")
-    issuer = st.text_input("Émetteur (placeholder)", value="FRANCE")
+    # Option : rafraîchir la liste (simple bouton)
+    if st.button("Rafraîchir la liste d'images"):
+        st.experimental_rerun()
 
-    # Symbologie forcée : DataMatrix (pas d'option pour QR)
-    st.markdown("**Symbologie : DataMatrix (obligatoire)**", unsafe_allow_html=True)
+    st.markdown("**Filtrer par identifiant**", unsafe_allow_html=True)
+    filter_text = st.text_input("Recherche (id partiel)", value="")
 
-    st.markdown("**Remarque** : ceci est un rendu factice pour tests. Il ne sera pas reconnu comme authentique par l’ANTS.", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-
-with divider_col:
+    st.markdown("---")
+    st.markdown("**Instructions rapides**", unsafe_allow_html=True)
     st.markdown(
         """
-        <div class="vertical-divider">
-            <div style="position:relative">
-                <div class="bar"></div>
-                <div class="dot" style="top:18px"></div>
-                <div class="dot" style="top:90px"></div>
-                <div class="dot" style="top:170px"></div>
-                <div class="dot" style="top:250px"></div>
-            </div>
-        </div>
+        - Les images DataMatrix doivent être générées par CI (GitHub Actions) et commit dans `static/datamatrix/`.
+        - Nom de fichier attendu : `<id>.png` (ex : `cin_001.png`).
+        - Optionnel : placer un fichier texte `static/datamatrix_meta/<id>.txt` contenant la chaîne encodée.
+        - Si aucune image n'est trouvée, vérifie l'exécution du workflow GitHub Actions.
         """,
         unsafe_allow_html=True,
     )
+    st.markdown("</div>", unsafe_allow_html=True)
 
-with right_col:
+# --- Helper functions ---
+def list_datamatrix_files(directory: str):
+    if not os.path.isdir(directory):
+        return []
+    files = [f for f in os.listdir(directory) if f.lower().endswith(".png")]
+    files.sort()
+    return files
+
+def read_metadata_for_id(meta_dir: str, id_name: str):
+    """
+    Cherche un fichier texte ou JSON associé à l'id et retourne son contenu (string).
+    Priorité : .txt, puis .json (champ 'payload' ou 'data').
+    """
+    if not os.path.isdir(meta_dir):
+        return None
+    txt_path = os.path.join(meta_dir, f"{id_name}.txt")
+    if os.path.isfile(txt_path):
+        try:
+            with open(txt_path, "r", encoding="utf-8") as f:
+                return f.read().strip()
+        except Exception:
+            return None
+    json_path = os.path.join(meta_dir, f"{id_name}.json")
+    if os.path.isfile(json_path):
+        try:
+            import json as _json
+            with open(json_path, "r", encoding="utf-8") as f:
+                j = _json.load(f)
+            # Chercher champs usuels
+            for key in ("payload", "data", "value", "text"):
+                if key in j:
+                    return str(j[key])
+            # fallback : stringify
+            return _json.dumps(j, ensure_ascii=False)
+        except Exception:
+            return None
+    return None
+
+def get_image_bytes(path: str) -> bytes:
+    with open(path, "rb") as f:
+        return f.read()
+
+# --- Main area: list and preview ---
+with main_col:
     st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.subheader("Aperçu 2D‑Codes (chaîne encodée)")
+    st.subheader("Aperçu des DataMatrix pré-générés")
 
-    # Construire la zone message (séparateurs factices)
-    def build_message(doc_type: str, issuer: str, fields: dict) -> str:
-        parts = [f"TYPE:{doc_type}", f"ISS:{issuer}"]
-        for k, v in fields.items():
-            parts.append(f"{k}:{v}")
-        return "\x1d".join(parts)
+    files = list_datamatrix_files(DM_DIR)
+    if filter_text:
+        files = [f for f in files if filter_text.lower() in f.lower()]
 
-    fields = {
-        "NOM": nom.strip(),
-        "PRENOM": prenom.strip(),
-        "DOB": dob.isoformat(),
-        "NUM": num.strip()
-    }
-    message = build_message(doc_type, issuer, fields)
-
-    # Signature factice ECDSA (test)
-    def sign_message_ecdsa(message_bytes: bytes):
-        private_key = ec.generate_private_key(ec.SECP256R1())
-        signature = private_key.sign(message_bytes, ec.ECDSA(hashes.SHA256()))
-        public_key_pem = private_key.public_key().public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
-        )
-        return signature, public_key_pem
-
-    signature, public_key_pem = sign_message_ecdsa(message.encode("utf-8"))
-    signature_b64 = base64.b64encode(signature).decode("ascii")
-
-    header = "DC03FR01"  # en-tête factice
-    two_d_string = header + message + "\x1f" + "SIG:" + signature_b64
-
-    preview = two_d_string if len(two_d_string) <= 600 else two_d_string[:600] + "..."
-    st.code(preview, language="text")
-
-    # Si pylibdmtx absent : afficher message d'erreur explicite et désactiver génération
-    if not DATAMATRIX_AVAILABLE:
+    if not files:
         st.markdown(
             """
             <div class="warning-box">
-            <strong>Erreur :</strong> <em>pylibdmtx (DataMatrix) n'est pas installé dans cet environnement.</em><br>
-            Le rendu DataMatrix ne fonctionnera pas tant que la dépendance système <code>libdmtx</code> et le paquet Python <code>pylibdmtx</code> ne sont pas présents.<br><br>
-            <strong>Solutions recommandées :</strong>
+            <strong>Aucune image DataMatrix trouvée.</strong><br>
+            Vérifie que ton workflow GitHub Actions a généré et committé les PNG dans <code>static/datamatrix/</code>.<br><br>
+            Si tu veux, voici un rappel rapide du workflow recommandé :
             <ul>
-              <li>Déployer via <code>Docker</code> en utilisant le <code>Dockerfile</code> fourni (installe <code>libdmtx-dev</code> puis <code>pylibdmtx</code>).</li>
-              <li>Ou déployer sur une plateforme qui accepte un <code>Dockerfile</code> (Render, Railway avec Docker, VPS, etc.).</li>
+              <li>Action CI installe <code>libdmtx-dev</code> et <code>pylibdmtx</code>.</li>
+              <li>Le script <code>scripts/generate_datamatrix.py</code> lit <code>data/datamatrix_inputs.json</code> et écrit <code>static/datamatrix/&lt;id&gt;.png</code>.</li>
+              <li>Le job commit et push les images générées dans le repo.</li>
             </ul>
-            L'application a désactivé la génération tant que DataMatrix n'est pas disponible.
             </div>
             """,
             unsafe_allow_html=True,
         )
-        # Bouton désactivé visuellement : on affiche un bouton inactif (non cliquable)
-        st.button("Générer DataMatrix (indisponible)", disabled=True)
-        # Afficher instructions courtes pour Docker (copier-coller)
-        st.markdown("**Commande Docker recommandée (local / CI) :**")
-        st.code(
-            "docker build -t 2ddoc-app:latest . && docker run --rm -p 8501:8501 2ddoc-app:latest",
-            language="bash",
-        )
         st.markdown("</div>", unsafe_allow_html=True)
     else:
-        # Génération DataMatrix (pylibdmtx disponible)
-        def make_datamatrix_png_bytes(data: str) -> bytes:
-            # pylibdmtx.encode retourne généralement bytes (PNG)
-            encoded = dmtx_encode(data.encode('utf-8'))
-            if isinstance(encoded, bytes):
-                return encoded
-            if hasattr(encoded, "save"):
-                buf = io.BytesIO()
-                encoded.save(buf, format="PNG")
-                return buf.getvalue()
-            raise RuntimeError("Format de sortie DataMatrix inattendu.")
-
-        if st.button("Générer DataMatrix"):
+        # Sidebar selection of file
+        st.markdown("**Images trouvées**", unsafe_allow_html=True)
+        cols = st.columns([1, 2])
+        with cols[0]:
+            selected = st.selectbox("Sélectionner un fichier", options=files, index=0)
+        with cols[1]:
+            st.markdown("**Actions**")
+            # Download selected image (serve bytes)
+            selected_path = os.path.join(DM_DIR, selected)
             try:
-                png_bytes = make_datamatrix_png_bytes(two_d_string)
-
-                # Affichage et téléchargement
-                st.markdown("<div class='qr-card' style='text-align:center'>", unsafe_allow_html=True)
-                st.image(Image.open(io.BytesIO(png_bytes)), use_column_width=False)
-                st.markdown("</div>", unsafe_allow_html=True)
-
-                st.markdown("**Signature (base64)**")
-                st.code(signature_b64, language="text")
-                st.markdown("**Clé publique de test (PEM)**")
-                st.code(public_key_pem.decode("utf-8"), language="text")
-
+                img_bytes = get_image_bytes(selected_path)
                 st.download_button(
-                    label="Télécharger PNG",
-                    data=png_bytes,
-                    file_name="2ddoc_datamatrix.png",
-                    mime="image/png"
+                    label="Télécharger l'image PNG",
+                    data=img_bytes,
+                    file_name=selected,
+                    mime="image/png",
                 )
-            except Exception as e:
-                st.error(f"Erreur lors de la génération DataMatrix : {e}")
+            except Exception:
+                st.error("Impossible de lire le fichier sélectionné pour le téléchargement.")
 
-    st.markdown("</div>", unsafe_allow_html=True)
+        # Display preview and metadata
+        st.markdown("---")
+        st.markdown(f"**Aperçu : {selected}**")
+        try:
+            image = Image.open(os.path.join(DM_DIR, selected))
+            st.image(image, use_column_width=False)
+        except Exception as e:
+            st.error(f"Erreur lors de l'ouverture de l'image : {e}")
 
+        # Show metadata if exists
+        id_name = os.path.splitext(selected)[0]
+        meta = read_metadata_for_id(METADATA_DIR, id_name)
+        if meta:
+            st.markdown("**Chaîne encodée (métadonnées)**")
+            st.code(meta, language="text")
+        else:
+            st.markdown("**Chaîne encodée (métadonnées)**")
+            st.markdown("<div class='muted'>Aucune métadonnée trouvée pour cet identifiant (fichier .txt ou .json attendu dans static/datamatrix_meta/).</div>", unsafe_allow_html=True)
+
+        # Show small debug info
+        st.markdown("---")
+        st.markdown("**Informations fichier**")
+        try:
+            size_kb = os.path.getsize(os.path.join(DM_DIR, selected)) / 1024.0
+            st.markdown(f"- Nom : **{selected}**  \n- Taille : **{size_kb:.1f} KB**  \n- Chemin : `{os.path.join(DM_DIR, selected)}`")
+        except Exception:
+            st.markdown("- Informations fichier indisponibles.")
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+# --- Footer with helpful links/instructions ---
 st.markdown("---")
-st.caption("Usage pédagogique uniquement — pour production, respecter la spec ANTS et signer avec la clé officielle.")
+st.markdown(
+    """
+    **Notes de déploiement et recommandations**
+
+    - Si tu veux générer les DataMatrix automatiquement depuis GitHub, utilise un workflow GitHub Actions
+      qui installe `libdmtx-dev` puis `pylibdmtx`, exécute `scripts/generate_datamatrix.py` et commit les PNG dans `static/datamatrix/`.
+    - N'ajoute pas `pylibdmtx` dans `requirements.txt` si tu déploies directement sur Streamlit Cloud sans Docker : l'installation échouera.
+    - Pour un flux dynamique (génération à la volée), déploie l'application via Docker sur une plateforme qui accepte des images Docker.
+    """,
+    unsafe_allow_html=True,
+)
+
+# --- End ---
