@@ -21,13 +21,14 @@ try:
 except Exception:
     SEGNO_AVAILABLE = False
 
-# --- Page config ---
+# --- Page config (corrigé) ---
 st.set_page_config(
-    page_title="Générateur 2D-Doc CIN TD1 (DataMatrix)",
-    page_icon="🧾",
+    page_title="Générateur 2D-Doc CIN TD1",
+    page_icon="https://img.icons8.com/external-duo-tone-yogi-aprelliyanto/24/external-search-file-document-duo-tone-yogi-aprelliyanto.png",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
 
 # --- CSS pour rendu visuel similaire ---
 st.markdown(
