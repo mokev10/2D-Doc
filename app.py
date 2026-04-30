@@ -22,12 +22,12 @@ st.markdown("""
 /* Titre */
 h1 {
     text-align: center;
-    color: #ffffff;
+    color: white;
     font-weight: 700;
     margin-bottom: 30px;
 }
 
-/* Text area styling */
+/* Text area */
 textarea {
     border-radius: 12px !important;
     border: 2px solid #334155 !important;
@@ -43,39 +43,39 @@ textarea:focus {
     transform: scale(1.01);
 }
 
-/* Slider */
+/* slider */
 .stSlider > div {
     color: white;
 }
 
-/* Bouton principal */
+/* ---------------- BOUTON CENTRÉ ---------------- */
+div.stButton {
+    display: flex;
+    justify-content: center;
+}
+
+/* bouton style */
 .stButton > button {
     background: linear-gradient(90deg, #3b82f6, #6366f1);
     color: white;
     border: none;
-    padding: 0.6rem 1.2rem;
+    padding: 0.6rem 1.5rem;
     border-radius: 10px;
     font-weight: bold;
     transition: all 0.3s ease-in-out;
     box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 
-/* hover button */
+/* hover */
 .stButton > button:hover {
     transform: scale(1.05);
     background: linear-gradient(90deg, #2563eb, #4f46e5);
     box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
 }
 
-/* click effect */
+/* active */
 .stButton > button:active {
     transform: scale(0.97);
-}
-
-/* download button */
-.stDownloadButton > button {
-    border-radius: 10px;
-    transition: all 0.3s ease-in-out;
 }
 
 </style>
@@ -97,9 +97,14 @@ dpi = st.slider(
 
 use_escape = st.checkbox("Activer escape sequences (\\n = retour ligne)")
 
-# ---------------- ACTION ----------------
+# ---------------- BOUTON CENTRÉ ----------------
+col1, col2, col3 = st.columns([1, 2, 1])
 
-if st.button("Générer"):
+with col2:
+    generate = st.button("Générer")
+
+# ---------------- ACTION ----------------
+if generate:
     if data.strip():
 
         if use_escape:
