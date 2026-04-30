@@ -1,0 +1,2 @@
+# dans app.py, pour afficher
+st.image("static/datamatrix/cin_001.png", use_column_width=False)
