@@ -1,18 +1,14 @@
-from pylibdmtx.pylibdmtx import encode
-from PIL import Image
+import treepoem
 import io
 
 def generate_datamatrix(data: str):
-    encoded = encode(data.encode("utf-8"))
-
-    image = Image.frombytes(
-        'RGB',
-        (encoded.width, encoded.height),
-        encoded.pixels
+    image = treepoem.generate_barcode(
+        barcode_type='datamatrix',
+        data=data
     )
 
     buffer = io.BytesIO()
-    image.save(buffer, format="PNG")
+    image.convert("RGB").save(buffer, format="PNG")
     buffer.seek(0)
 
     return buffer
