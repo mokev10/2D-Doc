@@ -1,14 +1,16 @@
 import streamlit as st
 from scripts.generate_datamatrix import generate_datamatrix
 
-st.title("Générateur DataMatrix")
-# --- Page config (corrigé selon ta demande) ---
+# ✅ DOIT être en premier
 st.set_page_config(
     page_title="Générateur 2D-Codes Data Matrix",
     page_icon="https://img.icons8.com/external-duo-tone-yogi-aprelliyanto/24/external-search-file-document-duo-tone-yogi-aprelliyanto.png",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+st.title("Générateur DataMatrix")
+
 data = st.text_input("Texte à encoder")
 
 if st.button("Générer"):
@@ -23,3 +25,5 @@ if st.button("Générer"):
             file_name="datamatrix.png",
             mime="image/png"
         )
+    else:
+        st.warning("Entre un texte")
