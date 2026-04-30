@@ -13,7 +13,7 @@ st.set_page_config(
 st.markdown("""
 <style>
 
-/* Background global */
+/* Background */
 .stApp {
     background: linear-gradient(135deg, #0f172a, #111827);
     color: white;
@@ -36,22 +36,23 @@ textarea {
     transition: all 0.3s ease-in-out;
 }
 
-/* focus animation */
+/* focus */
 textarea:focus {
     border-color: #3b82f6 !important;
     box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
     transform: scale(1.01);
 }
 
-/* slider */
+/* slider text */
 .stSlider > div {
     color: white;
 }
 
-/* ---------------- BOUTON CENTRÉ ---------------- */
+/* ---------------- BOUTON CENTRÉ VRAI ---------------- */
 div.stButton {
     display: flex;
     justify-content: center;
+    margin-top: 20px;
 }
 
 /* bouton style */
@@ -59,8 +60,8 @@ div.stButton {
     background: linear-gradient(90deg, #3b82f6, #6366f1);
     color: white;
     border: none;
-    padding: 0.6rem 1.5rem;
-    border-radius: 10px;
+    padding: 0.7rem 2rem;
+    border-radius: 12px;
     font-weight: bold;
     transition: all 0.3s ease-in-out;
     box-shadow: 0 4px 15px rgba(0,0,0,0.3);
@@ -68,14 +69,14 @@ div.stButton {
 
 /* hover */
 .stButton > button:hover {
-    transform: scale(1.05);
+    transform: scale(1.06);
     background: linear-gradient(90deg, #2563eb, #4f46e5);
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+    box-shadow: 0 6px 25px rgba(59, 130, 246, 0.6);
 }
 
-/* active */
+/* click */
 .stButton > button:active {
-    transform: scale(0.97);
+    transform: scale(0.96);
 }
 
 </style>
@@ -97,13 +98,10 @@ dpi = st.slider(
 
 use_escape = st.checkbox("Activer escape sequences (\\n = retour ligne)")
 
-# ---------------- BOUTON CENTRÉ ----------------
-col1, col2, col3 = st.columns([1, 2, 1])
-
-with col2:
-    generate = st.button("Générer")
-
 # ---------------- ACTION ----------------
+
+generate = st.button("Générer")
+
 if generate:
     if data.strip():
 
