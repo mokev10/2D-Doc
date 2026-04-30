@@ -21,14 +21,13 @@ try:
 except Exception:
     SEGNO_AVAILABLE = False
 
-# --- Page config (corrigé) ---
+# --- Page config (corrigé selon ta demande) ---
 st.set_page_config(
     page_title="Générateur 2D-Doc CIN TD1",
     page_icon="https://img.icons8.com/external-duo-tone-yogi-aprelliyanto/24/external-search-file-document-duo-tone-yogi-aprelliyanto.png",
     layout="wide",
     initial_sidebar_state="expanded",
 )
-
 
 # --- CSS pour rendu visuel similaire ---
 st.markdown(
@@ -38,6 +37,7 @@ st.markdown(
     .card { background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(250,250,255,0.96)); border-radius:12px; padding:16px; box-shadow:0 6px 18px rgba(20,40,60,0.06); }
     .vertical-divider { width:28px; display:flex; align-items:center; justify-content:center; }
     .vertical-divider .bar { width:2px; height:320px; background:linear-gradient(180deg,#0b6fa4,#6fc3e8); border-radius:2px; position:relative; }
+    .vertical-divider .dot { position:absolute; left:-6px; width:12px; height:12px; border-radius:50%; background:#e6fbff; border:2px solid rgba(11,111,164,0.12); }
     .qr-card { background: #fff; padding:12px; border-radius:10px; display:inline-block; border:1px solid rgba(0,0,0,0.03); }
     .small-muted { color:#4b6b7a; font-size:13px; }
     .stButton>button { background-color:#0b6fa4; color:white; border-radius:8px; padding:8px 14px; border:none; }
@@ -83,6 +83,10 @@ with divider_col:
         <div class="vertical-divider">
             <div style="position:relative">
                 <div class="bar"></div>
+                <div class="dot" style="top:18px"></div>
+                <div class="dot" style="top:90px"></div>
+                <div class="dot" style="top:170px"></div>
+                <div class="dot" style="top:250px"></div>
             </div>
         </div>
         """,
@@ -127,7 +131,7 @@ with right_col:
     preview = two_d_doc_string if len(two_d_doc_string) <= 600 else two_d_doc_string[:600] + "..."
     st.code(preview, language="text")
 
-    # Explication visuelle (comme demandé)
+    # Explication visuelle
     st.markdown(
         """
         **Comment distinguer visuellement les deux symbologies :**
@@ -147,11 +151,9 @@ with right_col:
     def make_datamatrix_png_bytes(data: str) -> bytes:
         if not DATAMATRIX_AVAILABLE:
             raise RuntimeError("pylibdmtx non disponible dans cet environnement.")
-        # pylibdmtx.encode retourne généralement bytes (PNG)
         encoded = dmtx_encode(data.encode('utf-8'))
         if isinstance(encoded, bytes):
             return encoded
-        # Si c'est un PIL Image-like object
         if hasattr(encoded, "save"):
             buf = io.BytesIO()
             encoded.save(buf, format="PNG")
