@@ -18,7 +18,7 @@ except Exception:
 # --- Page config (corrigé) ---
 st.set_page_config(
     page_title="Générateur 2D-Doc CIN TD1",
-    page_icon="https://img.icons8.com/external-smashingstocks-detailed-outline-smashing-stocks/66/external-QR-Code-mobile-shopping-smashingstocks-detailed-outline-smashing-stocks.png",
+    page_icon="https://img.icons8.com/external-duo-tone-yogi-aprelliyanto/24/external-search-file-document-duo-tone-yogi-aprelliyanto.png",
     layout="wide",
     initial_sidebar_state="expanded",
 )
