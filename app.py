@@ -15,11 +15,13 @@ try:
 except Exception:
     DATAMATRIX_AVAILABLE = False
 
-# --- Page config ---
-st.set_page_config(page_title="Générateur 2D-Doc CIN TD1", layout="wide"
-                   page_icon="https://img.icons8.com/external-justicon-lineal-justicon/64/external-barcode-ecommerce-justicon-lineal-justicon.png",
+# --- Page config (corrigé) ---
+st.set_page_config(
+    page_title="Générateur 2D-Doc CIN TD1",
+    page_icon="https://img.icons8.com/external-justicon-lineal-justicon/64/external-barcode-ecommerce-justicon-lineal-justicon.png",
     layout="wide",
-    initial_sidebar_state="expanded",)
+    initial_sidebar_state="expanded",
+)
 
 # --- CSS pour rendu proche de la première image (fond, carte, diviseur) ---
 st.markdown(
