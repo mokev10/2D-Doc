@@ -63,20 +63,20 @@ textarea:focus {
     transform: scale(1.05);
 }
 
-/* ---------------- CENTRAGE IMAGE ---------------- */
-.center-img {
+/* ---------------- ALIGNEMENT HORIZONTAL ---------------- */
+.center-row {
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-direction: column;
-    margin-top: 20px;
+    gap: 50px;
+    margin-top: 25px;
+    flex-wrap: wrap;
 }
 
-/* force image centrée */
-.center-img img {
+/* image centrée */
+.center-row img {
     display: block;
-    margin-left: auto;
-    margin-right: auto;
+    margin: auto;
 }
 
 </style>
@@ -98,13 +98,9 @@ dpi = st.slider(
 
 use_escape = st.checkbox("Activer escape sequences (\\n = retour ligne)")
 
-# ---------------- BOUTON CENTRÉ ----------------
-col1, col2, col3 = st.columns([1, 1, 1])
+# ---------------- ACTION ----------------
 
-with col2:
-    generate = st.button("Générer")
-
-# ---------------- RESULT ----------------
+generate = st.button("Générer")
 
 if generate:
     if data.strip():
@@ -114,17 +110,21 @@ if generate:
 
         img_buffer = generate_datamatrix(data, dpi=dpi)
 
-        # 🔥 WRAPPER CENTRÉ COMPLET
-        st.markdown('<div class="center-img">', unsafe_allow_html=True)
+        # 🔥 BLOC HORIZONTAL CENTRÉ
+        st.markdown('<div class="center-row">', unsafe_allow_html=True)
 
-        st.image(img_buffer, caption="DataMatrix généré")
+        col1, col2 = st.columns([1, 1], gap="large")
 
-        st.download_button(
-            label="Télécharger l'image",
-            data=img_buffer,
-            file_name=f"datamatrix_{dpi}dpi.png",
-            mime="image/png"
-        )
+        with col1:
+            st.image(img_buffer, caption="DataMatrix généré")
+
+        with col2:
+            st.download_button(
+                label="Télécharger l'image",
+                data=img_buffer,
+                file_name=f"datamatrix_{dpi}dpi.png",
+                mime="image/png"
+            )
 
         st.markdown('</div>', unsafe_allow_html=True)
 
