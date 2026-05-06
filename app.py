@@ -134,7 +134,7 @@ if generate:
             with col2:
                 st.image(img_buffer, caption="DataMatrix généré", use_column_width=True)
                 st.download_button(
-                    label="📥 Télécharger l'image",
+                    label="Télécharger l'image",
                     data=img_buffer,
                     file_name=f"datamatrix_{dpi}dpi.png",
                     mime="image/png"
@@ -156,7 +156,7 @@ if generate:
                 with col2:
                     st.image(gs1_buffer, caption="Data Matrix (ECC200) généré", use_column_width=True)
                     st.download_button(
-                        label="📥 Télécharger l'image",
+                        label="Télécharger l'image",
                         data=gs1_buffer.getvalue(),
                         file_name=f"gs1datamatrix_{dpi}dpi.png",
                         mime="image/png"
@@ -190,7 +190,7 @@ if generate:
                 with col2:
                     st.image(pdf417_buffer, caption="PDF417 généré", use_column_width=True)
                     st.download_button(
-                        label="📥 Télécharger l'image",
+                        label="Télécharger l'image",
                         data=pdf417_buffer.getvalue(),
                         file_name=f"pdf417_{dpi}dpi.png",
                         mime="image/png"
@@ -224,7 +224,7 @@ if generate:
                 with col2:
                     st.image(code128_buffer, caption="Code-128 généré", use_column_width=True)
                     st.download_button(
-                        label="📥 Télécharger l'image",
+                        label="Télécharger l'image",
                         data=code128_buffer.getvalue(),
                         file_name=f"code128_{dpi}dpi.png",
                         mime="image/png"
