@@ -98,18 +98,16 @@ barcode_type = st.selectbox(
 
 data = st.text_area("Texte à encoder")
 
-if barcode_type == "DataMatrix":
-    dpi = st.slider(
-        "Image Resolution (DPI)",
-        min_value=72,
-        max_value=300,
-        value=150,
-        step=1
-    )
+# Options disponibles pour les deux types
+dpi = st.slider(
+    "Image Resolution (DPI)",
+    min_value=72,
+    max_value=300,
+    value=150,
+    step=1
+)
 
-    use_escape = st.checkbox("Activer escape sequences (\\n = retour ligne)")
-else:
-    use_escape = False
+use_escape = st.checkbox("Evaluate escape sequences (\\n for ENTER)")
 
 # ---------------- BOUTON CENTRÉ ----------------
 col1, col2, col3 = st.columns([1, 1, 1])
@@ -121,12 +119,14 @@ with col2:
 
 if generate:
     if data.strip():
+        # Traiter les escape sequences si activé
+        processed_data = data
+        if use_escape:
+            processed_data = processed_data.encode().decode("unicode_escape")
+
         if barcode_type == "DataMatrix":
             
-            if use_escape:
-                data = data.encode().decode("unicode_escape")
-
-            img_buffer = generate_datamatrix(data, dpi=dpi)
+            img_buffer = generate_datamatrix(processed_data, dpi=dpi)
 
             # 🔥 CENTRAGE DATAMATRIX
             col1, col2, col3 = st.columns([1, 1, 1])
@@ -142,8 +142,8 @@ if generate:
 
         else:  # PDF417
             # Encoder les données pour l'URL
-            encoded_data = data.replace(" ", "+").replace("\n", "%0A")
-            pdf417_url = f"https://barcode.tec-it.com/barcode.ashx?data={encoded_data}&code=PDF417&translate-esc=on&showhrt=no"
+            encoded_data = processed_data.replace(" ", "+").replace("\n", "%0A")
+            pdf417_url = f"https://barcode.tec-it.com/barcode.ashx?data={encoded_data}&code=PDF417&translate-esc=on&showhrt=no&dpi={dpi}"
 
             try:
                 # Récupérer l'image PDF417
@@ -158,7 +158,7 @@ if generate:
                     st.download_button(
                         label="📥 Télécharger l'image",
                         data=pdf417_buffer.getvalue(),
-                        file_name="pdf417.png",
+                        file_name=f"pdf417_{dpi}dpi.png",
                         mime="image/png"
                     )
 
