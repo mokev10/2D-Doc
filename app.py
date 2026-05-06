@@ -92,7 +92,7 @@ st.title("Générateur de Codes 2D")
 # Sélection du type de code-barres
 barcode_type = st.selectbox(
     "Type de code-barres",
-    ["DataMatrix", "PDF417"],
+    ["DataMatrix", "Data Matrix (ECC200) - 2D Barcode", "PDF417"],
     index=0
 )
 
@@ -139,6 +139,40 @@ if generate:
                     file_name=f"datamatrix_{dpi}dpi.png",
                     mime="image/png"
                 )
+
+        elif barcode_type == "Data Matrix (ECC200) - 2D Barcode":
+            # Encoder les données pour l'URL
+            encoded_data = processed_data.replace(" ", "+").replace("\n", "%0A")
+            gs1_url = f"https://barcode.tec-it.com/barcode.ashx?data={encoded_data}&code=GS1DataMatrix&translate-esc=on&showhrt=no&dpi={dpi}&dmsize=Default"
+
+            try:
+                # Récupérer l'image GS1DataMatrix
+                response = requests.get(gs1_url, timeout=10)
+                gs1_buffer = BytesIO(response.content)
+
+                # 🔥 CENTRAGE GS1DATAMATRIX
+                col1, col2, col3 = st.columns([1, 1, 1])
+
+                with col2:
+                    st.image(gs1_buffer, caption="Data Matrix (ECC200) généré", use_column_width=True)
+                    st.download_button(
+                        label="📥 Télécharger l'image",
+                        data=gs1_buffer.getvalue(),
+                        file_name=f"gs1datamatrix_{dpi}dpi.png",
+                        mime="image/png"
+                    )
+
+                    # Crédit TEC-IT
+                    st.markdown("""
+                    <div style='text-align: center; font-size: 12px; margin-top: 10px;'>
+                        <a href='https://www.tec-it.com' title='Barcode Software by TEC-IT' target='_blank' style='color: #3b82f6; text-decoration: none;'>
+                            Powered by TEC-IT
+                        </a>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+            except Exception as e:
+                st.error(f"Erreur lors de la génération du Data Matrix (ECC200): {e}")
 
         else:  # PDF417
             # Encoder les données pour l'URL
