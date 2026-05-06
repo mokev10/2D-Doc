@@ -92,7 +92,7 @@ st.title("Générateur de Codes 2D")
 # Sélection du type de code-barres
 barcode_type = st.selectbox(
     "Type de code-barres",
-    ["DataMatrix", "Data Matrix (ECC200) - 2D Barcode", "PDF417"],
+    ["DataMatrix", "Data Matrix (ECC200) - 2D Barcode", "PDF417", "Code-128"],
     index=0
 )
 
@@ -174,7 +174,7 @@ if generate:
             except Exception as e:
                 st.error(f"Erreur lors de la génération du Data Matrix (ECC200): {e}")
 
-        else:  # PDF417
+        elif barcode_type == "PDF417":
             # Encoder les données pour l'URL
             encoded_data = processed_data.replace(" ", "+").replace("\n", "%0A")
             pdf417_url = f"https://barcode.tec-it.com/barcode.ashx?data={encoded_data}&code=PDF417&translate-esc=on&showhrt=no&dpi={dpi}"
@@ -207,6 +207,40 @@ if generate:
 
             except Exception as e:
                 st.error(f"Erreur lors de la génération du PDF417: {e}")
+
+        elif barcode_type == "Code-128":
+            # Encoder les données pour l'URL
+            encoded_data = processed_data.replace(" ", "+").replace("\n", "%0A")
+            code128_url = f"https://barcode.tec-it.com/barcode.ashx?data={encoded_data}&code=Code128&translate-esc=on&showhrt=no&dpi={dpi}"
+
+            try:
+                # Récupérer l'image Code128
+                response = requests.get(code128_url, timeout=10)
+                code128_buffer = BytesIO(response.content)
+
+                # 🔥 CENTRAGE CODE128
+                col1, col2, col3 = st.columns([1, 1, 1])
+
+                with col2:
+                    st.image(code128_buffer, caption="Code-128 généré", use_column_width=True)
+                    st.download_button(
+                        label="📥 Télécharger l'image",
+                        data=code128_buffer.getvalue(),
+                        file_name=f"code128_{dpi}dpi.png",
+                        mime="image/png"
+                    )
+
+                    # Crédit TEC-IT
+                    st.markdown("""
+                    <div style='text-align: center; font-size: 12px; margin-top: 10px;'>
+                        <a href='https://www.tec-it.com' title='Barcode Software by TEC-IT' target='_blank' style='color: #3b82f6; text-decoration: none;'>
+                            Powered by TEC-IT
+                        </a>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+            except Exception as e:
+                st.error(f"Erreur lors de la génération du Code-128: {e}")
 
     else:
         st.warning("Veuillez entrer un texte à encoder")
