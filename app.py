@@ -98,7 +98,7 @@ barcode_type = st.selectbox(
 
 data = st.text_area("Texte à encoder")
 
-# Options disponibles pour tous les types
+# Options disponibles pour les deux types
 dpi = st.slider(
     "Image Resolution (DPI)",
     min_value=72,
@@ -108,29 +108,6 @@ dpi = st.slider(
 )
 
 use_escape = st.checkbox("Evaluate escape sequences (\\n for ENTER)")
-
-# Options spécifiques pour Code-128
-if barcode_type == "Code-128":
-    st.markdown("---")
-    st.subheader("⚙️ Options Code-128")
-    
-    code128_width = st.slider(
-        "Largeur du code-barres (width)",
-        min_value=1,
-        max_value=10,
-        value=2,
-        step=1,
-        help="Épaisseur des barres (1-10). Plus élevé = barres plus épaisses"
-    )
-    
-    code128_height = st.slider(
-        "Hauteur du code-barres (height)",
-        min_value=20,
-        max_value=150,
-        value=80,
-        step=5,
-        help="Hauteur des barres en pixels (20-150). Plus élevé = code-barres plus grand"
-    )
 
 # ---------------- BOUTON CENTRÉ ----------------
 col1, col2, col3 = st.columns([1, 1, 1])
@@ -234,7 +211,7 @@ if generate:
         elif barcode_type == "Code-128":
             # Encoder les données pour l'URL
             encoded_data = processed_data.replace(" ", "+").replace("\n", "%0A")
-            code128_url = f"https://barcode.tec-it.com/barcode.ashx?data={encoded_data}&code=Code128&translate-esc=on&showhrt=no&dpi={dpi}&width={code128_width}&height={code128_height}"
+            code128_url = f"https://barcode.tec-it.com/barcode.ashx?data={encoded_data}&code=Code128&translate-esc=on&showhrt=no&dpi={dpi}"
 
             try:
                 # Récupérer l'image Code128
