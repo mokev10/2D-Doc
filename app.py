@@ -1,5 +1,7 @@
 import streamlit as st
 from scripts.generate_datamatrix import generate_datamatrix
+import requests
+from io import BytesIO
 
 # ---------------- CONFIG ----------------
 st.set_page_config(
@@ -62,6 +64,7 @@ textarea:focus {
     font-weight: bold;
     transition: all 0.3s ease-in-out;
     box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    width: 100%;
 }
 
 .stButton > button:hover {
@@ -73,44 +76,10 @@ textarea:focus {
     color: white;
 }
 
-/* ---------------- CENTRAGE IMAGE ---------------- */
-.center-img {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    margin-top: 20px;
-    padding: 20px;
-    background: rgba(30, 41, 59, 0.6);
-    border-radius: 12px;
-    border: 1px solid #334155;
-}
-
-/* force image centrée */
-.center-img img {
+/* Centre les images */
+img {
     display: block;
-    margin-left: auto;
-    margin-right: auto;
-    max-width: 100%;
-    height: auto;
-}
-
-/* Lien centré */
-.center-img a {
-    color: #3b82f6;
-    text-decoration: none;
-    margin-top: 15px;
-    font-size: 14px;
-}
-
-.center-img a:hover {
-    text-decoration: underline;
-}
-
-/* Logo centré */
-.center-img a img {
-    margin-top: 10px;
-    height: auto;
+    margin: 0 auto;
 }
 
 </style>
@@ -159,39 +128,51 @@ if generate:
 
             img_buffer = generate_datamatrix(data, dpi=dpi)
 
-            # 🔥 WRAPPER CENTRÉ COMPLET
-            st.markdown('<div class="center-img">', unsafe_allow_html=True)
+            # 🔥 CENTRAGE DATAMATRIX
+            col1, col2, col3 = st.columns([1, 1, 1])
 
-            st.image(img_buffer, caption="DataMatrix généré")
-
-            st.download_button(
-                label="Télécharger l'image",
-                data=img_buffer,
-                file_name=f"datamatrix_{dpi}dpi.png",
-                mime="image/png"
-            )
-
-            st.markdown('</div>', unsafe_allow_html=True)
+            with col2:
+                st.image(img_buffer, caption="DataMatrix généré", use_column_width=True)
+                st.download_button(
+                    label="📥 Télécharger l'image",
+                    data=img_buffer,
+                    file_name=f"datamatrix_{dpi}dpi.png",
+                    mime="image/png"
+                )
 
         else:  # PDF417
             # Encoder les données pour l'URL
             encoded_data = data.replace(" ", "+").replace("\n", "%0A")
+            pdf417_url = f"https://barcode.tec-it.com/barcode.ashx?data={encoded_data}&code=PDF417&translate-esc=on&showhrt=no"
 
-            st.markdown(f"""
-            <div class='center-img'>
-                <img alt='PDF417 Barcode Generator TEC-IT' 
-                     src='https://barcode.tec-it.com/barcode.ashx?data={encoded_data}&code=PDF417&translate-esc=on&showhrt=no'
-                     style='max-width: 100%; height: auto;'/>
-                <div style='padding-top: 12px; text-align: center; font-size: 13px; font-family: Source Sans Pro, Arial, sans-serif;'>
-                    <a href='https://www.tec-it.com' title='Barcode Software by TEC-IT' target='_blank'>
-                        TEC-IT Barcode Generator<br/>
-                        <img alt='TEC-IT Barcode Software' border='0'
-                             src='https://www.tec-it.com/pics/banner/web/TEC-IT_Logo_75x75.gif'
-                             style='height: 50px; width: auto; margin-top: 8px;'>
-                    </a>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+            try:
+                # Récupérer l'image PDF417
+                response = requests.get(pdf417_url, timeout=10)
+                pdf417_buffer = BytesIO(response.content)
+
+                # 🔥 CENTRAGE PDF417
+                col1, col2, col3 = st.columns([1, 1, 1])
+
+                with col2:
+                    st.image(pdf417_buffer, caption="PDF417 généré", use_column_width=True)
+                    st.download_button(
+                        label="📥 Télécharger l'image",
+                        data=pdf417_buffer.getvalue(),
+                        file_name="pdf417.png",
+                        mime="image/png"
+                    )
+
+                    # Crédit TEC-IT
+                    st.markdown("""
+                    <div style='text-align: center; font-size: 12px; margin-top: 10px;'>
+                        <a href='https://www.tec-it.com' title='Barcode Software by TEC-IT' target='_blank' style='color: #3b82f6; text-decoration: none;'>
+                            Powered by TEC-IT
+                        </a>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+            except Exception as e:
+                st.error(f"Erreur lors de la génération du PDF417: {e}")
 
     else:
         st.warning("Veuillez entrer un texte à encoder")
